@@ -4,3 +4,4 @@ chromadb
 unstructured
 pymupdf
 python-dotenv
+langchain-community
