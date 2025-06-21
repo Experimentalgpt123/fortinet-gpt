@@ -1,40 +1,31 @@
 import os
-from langchain.document_loaders import PyMuPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+import streamlit as st
+from dotenv import load_dotenv
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Chroma
 from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
 
-from dotenv import load_dotenv
+# Load environment variables
 load_dotenv()
 
-# Load your OpenAI API key from environment variables
-openai_key = os.getenv("OPENAI_API_KEY")
+# Set page title
+st.set_page_config(page_title="Fortinet GPT", layout="centered")
+st.title("🔐 Fortinet GPT Assistant")
+st.write("Ask me anything about Fortinet configurations, best practices, or solutions.")
 
-# Load PDF(s)
-loader = PyMuPDFLoader("Fortinet_Admin_Guide.pdf")  # Replace with your filename
-docs = loader.load()
-
-# Chunk the content
-splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-chunks = splitter.split_documents(docs)
-
-# Embed and store in DB
+# Load your existing vector DB
 embedding = OpenAIEmbeddings()
-db = Chroma.from_documents(chunks, embedding, persist_directory="./db")
-db.persist()
+db = Chroma(persist_directory="./db", embedding_function=embedding)
 
-# RAG chain
-qa = RetrievalQA.from_chain_type(
+qa_chain = RetrievalQA.from_chain_type(
     llm=ChatOpenAI(model_name="gpt-4"),
     retriever=db.as_retriever()
 )
 
-# Ask questions
-while True:
-    query = input("Ask me something about Fortinet: ")
-    if query.lower() in ["exit", "quit"]:
-        break
-    answer = qa.run(query)
-    print(f"\nAnswer: {answer}")
+# Chat UI
+query = st.text_input("Enter your question:")
+if query:
+    with st.spinner("Thinking..."):
+        answer = qa_chain.run(query)
+        st.markdown(f"**Answer:**\n{answer}")
