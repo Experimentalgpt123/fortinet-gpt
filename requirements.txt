@@ -5,3 +5,4 @@ unstructured
 pymupdf
 python-dotenv
 langchain-community
+streamlit
